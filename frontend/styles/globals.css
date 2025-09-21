@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-gray-100 text-gray-900;
+    }
+}
+
+@layer utilities {
+    .text-shadow {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+}
+
+/* Custom animations */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+.animate-shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* Progress bar animations */
+@keyframes progress {
+    0% { width: 0; }
+    100% { width: 100%; }
+}
+
+.animate-progress {
+    animation: progress 0.5s ease-out forwards;
+}
+
+/* Custom styles for VideoCard */
+.video-card {
+    transition: transform 0.2s ease;
+}
+
+.video-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Custom styles for buttons */
+.btn-primary {
+    @apply bg-duo-green text-white font-bold py-3 px-6 rounded-lg
+           shadow-md hover:shadow-lg transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-duo-green focus:ring-opacity-50;
+}
+
+.btn-secondary {
+    @apply bg-duo-blue text-white font-bold py-3 px-6 rounded-lg
+           shadow-md hover:shadow-lg transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-duo-blue focus:ring-opacity-50;
+}
+
+/* Custom styles for inputs */
+.input-primary {
+    @apply w-full px-4 py-2 rounded-lg border-2 border-gray-300
+           focus:border-duo-green focus:outline-none transition-colors duration-200;
+}

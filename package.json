@@ -1,0 +1,17 @@
+{
+  "name": "v2slsl",
+  "version": "1.0.0",
+  "description": "Duolingo-style sign language learning platform",
+  "scripts": {
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "server:dev": "cd server && npm run dev",
+    "server:build": "cd server && npm run build",
+    "dev": "concurrently \"npm run frontend:dev\" \"npm run server:dev\"",
+    "build": "concurrently \"npm run frontend:build\" \"npm run server:build\"",
+    "install:all": "npm install && cd frontend && npm install && cd ../server && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
