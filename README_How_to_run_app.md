@@ -1,19 +1,20 @@
-first clone this repo to your local machine
+First clone this repo to your local machine
 
-create my sql server use the password adn user account in env to configure your server or replace with your username and password in the env file
+Create MySQL server use the password and user account in env to configure your server or replace with your username and password in the env file
 
 !!!!!! WARNING !!!!!!!!
 Never commit your actual .env files to repositories everybody can see it, this is just for demonstration
 
-run the table creation and seed data adding schema to generate sample test data into the databse
+Run the table creation and seed data adding schema to generate sample test data into the database
 
 
-You need to run the Repetition Engine v1 flask microservice
+You need to run the Repetition Engine v1 Flask microservice
 ```bash
 cd .\RepetitionEngineV1Synthetic\ 
-pyton app.py
+pip install -r requirements.txt
+python app.py
 ```
-run the server for the backend
+Run the server for the backend
 ```bash
 cd server
 npm install
