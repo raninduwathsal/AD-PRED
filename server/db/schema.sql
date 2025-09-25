@@ -18,6 +18,7 @@ CREATE TABLE users (
 CREATE TABLE cards (
     card_id INT AUTO_INCREMENT PRIMARY KEY,
     video_url VARCHAR(255) NOT NULL,
+    question TEXT,
     option_1 VARCHAR(255) NOT NULL,
     option_2 VARCHAR(255) NOT NULL,
     option_3 VARCHAR(255) NOT NULL,

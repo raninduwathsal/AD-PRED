@@ -10,12 +10,13 @@ declare global {
 
 interface VideoCardProps {
     videoUrl: string;
+    question?: string;
     options: string[];
     onAnswer: (answer: string, responseTime: number) => void;
     disabled?: boolean;
 }
 
-export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardProps) => {
+export const VideoCard = ({ videoUrl, question, options, onAnswer, disabled }: VideoCardProps) => {
     const [startTime, setStartTime] = useState<number | null>(null);
     const [isVideoReady, setIsVideoReady] = useState(false);
     const [isVimeoLoaded, setIsVimeoLoaded] = useState(false);
@@ -106,6 +107,15 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
                 }}
             />
             <div className="w-full max-w-2xl mx-auto p-4">
+                {/* Add question display */}
+                {question && (
+                    <div className="mb-4 p-4 bg-white rounded-lg shadow-md">
+                        <h2 className="text-xl font-semibold text-gray-800 text-center">
+                            {question}
+                        </h2>
+                    </div>
+                )}
+                
                 <div className="relative aspect-video mb-6 rounded-lg overflow-hidden shadow-lg">
                     <div className="relative w-full h-full bg-gray-100 flex items-center justify-center">
                         {videoUrl.startsWith('https://example.com') ? (

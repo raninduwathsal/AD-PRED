@@ -9,6 +9,7 @@ export interface User extends RowDataPacket {
 export interface Card extends RowDataPacket {
     card_id: number;
     video_url: string;
+    question?: string;
     option_1: string;
     option_2: string;
     option_3: string;

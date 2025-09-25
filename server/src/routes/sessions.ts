@@ -104,6 +104,7 @@ router.post('/start-session', async (req, res) => {
             return {
                 card_id: card.card_id,
                 video_url: card.video_url,
+                question: card.question,
                 options,
                 prob_correct: card.prob_correct
             };

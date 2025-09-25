@@ -138,6 +138,7 @@ export default function Session() {
                 {cards[currentIndex] && (
                     <VideoCard
                         videoUrl={cards[currentIndex].video_url}
+                        question={cards[currentIndex].question}
                         options={cards[currentIndex].options}
                         onAnswer={handleAnswer}
                         disabled={feedback.isCorrect !== null}
