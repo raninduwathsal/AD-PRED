@@ -1,18 +1,16 @@
-USE slsldb;
+
 
 /* Insert sample cards data */
 INSERT INTO cards (video_url, question, option_1, option_2, option_3, option_4, correct_answer, chapter, difficulty) VALUES
 -- Basics Chapter
-('https://vimeo.com/347119375', 'What does this sign mean?', 'Hello', 'Goodbye', 'Thank you', 'Please', 'Hello', 'Basics', 0.3),
-('https://vimeo.com/347119375', 'What does this sign mean?', 'Hello', 'Goodbye', 'Thank you', 'Please', 'Goodbye', 'Basics', 0.3),
-('https://vimeo.com/347119375', 'What does this sign mean?', 'Hello', 'Goodbye', 'Thank you', 'Please', 'Please', 'Basics', 0.4),
-('https://vimeo.com/347119375', 'What does this sign mean?', 'Hello', 'Goodbye', 'Thank you', 'Please', 'Thank you', 'Basics', 0.4),
-('https://vimeo.com/347119375', 'What does this sign mean?', 'Yes', 'No', 'Maybe', 'I don''t know', 'Yes', 'Basics', 0.3),
-('https://vimeo.com/347119375', 'What does this sign mean?', 'Yes', 'No', 'Maybe', 'I don''t know', 'No', 'Basics', 0.3),
-('https://vimeo.com/347119375', 'What does this sign mean?', 'Yes', 'No', 'Maybe', 'I don''t know', 'Maybe', 'Basics', 0.5),
-('https://vimeo.com/347119375', 'What does this sign mean?', 'Yes', 'No', 'Maybe', 'I don''t know', 'I don''t know', 'Basics', 0.5),
-('https://vimeo.com/347119375', 'What does this sign mean?', 'How', 'What', 'When', 'Where', 'How', 'Basics', 0.4),
-('https://vimeo.com/347119375', 'What does this sign mean?', 'How', 'What', 'When', 'Where', 'What', 'Basics', 0.4),
+('https://vimeo.com/1120549158', 'What does this sign mean?', 'going', 'Goodbye', 'Thank you', 'Please', 'going', 'Basics', 0.3),
+('https://vimeo.com/1120549287', 'What does this sign mean?', 'Chosing', 'Goodbye', 'Thank you', 'Please', 'Chosing', 'Basics', 0.3),
+('https://vimeo.com/1120549537', 'What does this sign mean?', 'Hello', 'Goodbye', 'Thank you', 'see', 'see', 'Basics', 0.4),
+('https://vimeo.com/1120554082', 'What does this sign mean?', 'Hello', 'Goodbye', '100', 'Please', '100', 'Basics', 0.4),
+('https://vimeo.com/1120554166', 'What does this sign mean?', 'Eat', 'No', 'Maybe', 'I don''t know', 'Eat', 'Basics', 0.3),
+('https://vimeo.com/1120554206', 'What does this sign mean?', 'Yes', 'Write', 'Maybe', 'I don''t know', 'Write', 'Basics', 0.3),
+('https://vimeo.com/1120554265', 'What does this sign mean?', 'Yes', 'No', 'wake up', 'I don''t know', 'wake up', 'Basics', 0.5),
+
 
 -- Greetings Chapter
 ('https://example.com/sign/goodmorning.mp4', 'What does this sign mean?', 'Good morning', 'Good afternoon', 'Good evening', 'Good night', 'Good morning', 'Greetings', 0.5),
