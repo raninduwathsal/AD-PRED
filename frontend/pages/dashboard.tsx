@@ -19,20 +19,19 @@ export default function Dashboard() {
                     router.replace('/');
                     return;
                 }
-
+    
                 const [chaptersData, progressData] = await Promise.all([
                     getChapters(),
                     getUserProgress(user.user_id)
                 ]);
-
+    
                 const level = Math.floor(progressData.xp / 100) + 1;
-                const chapterList = chaptersData.map((name: string) => ({
+                const chapterList = chaptersData.map((name: string, index: number) => ({
                     name,
                     dueCards: progressData.due_cards_by_chapter[name] || 0,
-                    unlocked: level >= ['Basics', 'Greetings', 'Food Signs', 'Family', 'Numbers']
-                        .indexOf(name) + 1
+                    unlocked: level >= index + 1
                 }));
-
+    
                 setChapters(chapterList);
                 setStats(progressData);
             } catch (error) {
@@ -42,7 +41,7 @@ export default function Dashboard() {
                 router.replace('/');
             }
         };
-
+    
         fetchData();
     }, [user, router]);
 
