@@ -1,7 +1,6 @@
 export type Card = {
     card_id: number;
     video_url: string;
-    question?: string;
     options: string[];
     prob_correct: number;
 };

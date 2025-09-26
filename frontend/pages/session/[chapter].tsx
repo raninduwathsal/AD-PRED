@@ -121,6 +121,8 @@ export default function Session() {
 
     if (!user || !chapter) return null;
 
+    const hasPlaceholderContent = cards[currentIndex]?.video_url?.startsWith('https://example.com');
+
     return (
         <div className="min-h-screen bg-gray-100">
             <StatsBar
@@ -135,10 +137,23 @@ export default function Session() {
                 }}
             />
             <div className="container mx-auto py-8">
+                {hasPlaceholderContent && (
+                    <div className="max-w-4xl mx-auto mb-6">
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+                            <span className="text-amber-600 text-xl">⚠️</span>
+                            <div>
+                                <h3 className="font-semibold text-amber-800 mb-1">Preview Content</h3>
+                                <p className="text-sm text-amber-700">
+                                    This chapter is using placeholder content for demonstration. 
+                                    The real sign language videos are being prepared and will be available soon!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {cards[currentIndex] && (
                     <VideoCard
                         videoUrl={cards[currentIndex].video_url}
-                        question={cards[currentIndex].question}
                         options={cards[currentIndex].options}
                         onAnswer={handleAnswer}
                         disabled={feedback.isCorrect !== null}
