@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: slsl-database
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: slsldb
+      MYSQL_USER: slsluser
+      MYSQL_PASSWORD: slslpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./server/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./server/db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    networks:
+      - slsl-network
+
+  # Backend Server
+  server:
+    build: 
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: slsl-server
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: slsluser
+      DB_PASSWORD: slslpassword
+      DB_NAME: slsldb
+      NODE_ENV: production
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - slsl-network
+    restart: unless-stopped
+
+  # Repetition Engine (Python Flask)
+  repetition-engine:
+    build: 
+      context: ./RepetitionEngineV1Synthetic
+      dockerfile: Dockerfile
+    container_name: slsl-repetition-engine
+    ports:
+      - "5000:5000"
+    networks:
+      - slsl-network
+    restart: unless-stopped
+
+  # Frontend (Next.js)
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: slsl-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_ML_API_URL: http://localhost:5000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - server
+      - repetition-engine
+    networks:
+      - slsl-network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  slsl-network:
+    driver: bridge
