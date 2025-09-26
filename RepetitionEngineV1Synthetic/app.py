@@ -17,8 +17,11 @@ try:
         le_card = pickle.load(f)
     with open('le_chapter.pkl', 'rb') as f:
         le_chapter = pickle.load(f)
+    print("All models and encoders loaded successfully!")
 except FileNotFoundError as e:
     raise Exception(f"Missing pickle file: {str(e)}")
+except Exception as e:
+    raise Exception(f"Failed to load pickle files: {str(e)}")
 
 # Define expected features for the model
 FEATURES = ['user_id_enc', 'card_id_enc', 'time_since_last_review', 
