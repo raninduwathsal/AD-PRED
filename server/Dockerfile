@@ -14,7 +14,7 @@ RUN chmod +x /usr/local/bin/wait-for-it.sh
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm install && npm install mysql2 dotenv && npm install --save-dev @types/node
 
 # Copy source code
 COPY . .

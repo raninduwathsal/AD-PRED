@@ -8,7 +8,8 @@ class Database {
     private pool: Pool;
 
     private constructor() {
-        const dbUrl = new URL(process.env.DB_URL || '');
+    const DEFAULT_DB_URL = 'mysql://root:password@localhost:3306/testdb';
+    const dbUrl = new URL(process.env.DB_URL || DEFAULT_DB_URL);
         const password = dbUrl.password || '';
         const user = dbUrl.username || '';
         const database = dbUrl.pathname.replace('/', '');
