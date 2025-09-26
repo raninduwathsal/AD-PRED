@@ -4,13 +4,108 @@
 
 @layer base {
     body {
-        @apply bg-gray-100 text-gray-900;
+        @apply bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-900 font-sans min-h-screen;
+        font-family: "feather", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background-attachment: fixed;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    /* Sign language themed background pattern */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: 
+            radial-gradient(circle at 25% 25%, rgba(139, 69, 19, 0.03) 0%, transparent 50%),
+            radial-gradient(circle at 75% 75%, rgba(30, 144, 255, 0.03) 0%, transparent 50%),
+            radial-gradient(circle at 50% 50%, rgba(255, 165, 0, 0.02) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: -1;
+    }
+}
+
+@layer components {
+    /* Duolingo-style buttons */
+    .btn-duo-primary {
+        @apply w-full rounded-2xl border-b-4 border-duo-green-600 bg-duo-green-500 
+               px-10 py-3 text-center font-bold uppercase text-white 
+               transition-all duration-200 hover:border-duo-green-500 hover:bg-duo-green-400
+               focus:outline-none focus:ring-2 focus:ring-duo-green-400 focus:ring-opacity-50;
+    }
+
+    .btn-duo-secondary {
+        @apply w-full rounded-2xl border-2 border-b-4 border-duo-bg-dark-blue 
+               bg-duo-bg-blue px-8 py-3 font-bold uppercase text-white 
+               transition-all duration-200 hover:bg-opacity-90
+               focus:outline-none focus:ring-2 focus:ring-duo-blue-400 focus:ring-opacity-50;
+    }
+
+    .btn-duo-white {
+        @apply w-full rounded-2xl border-2 border-b-4 border-gray-300 
+               bg-white px-8 py-3 font-bold uppercase text-gray-700 
+               transition-all duration-200 hover:bg-gray-50
+               focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50;
+    }
+
+    /* Duolingo-style inputs */
+    .input-duo {
+        @apply w-full rounded-2xl border-2 border-gray-300 bg-white px-4 py-3 
+               text-gray-900 transition-all duration-200 
+               focus:border-duo-blue-400 focus:outline-none focus:ring-2 
+               focus:ring-duo-blue-400 focus:ring-opacity-25;
+    }
+
+    /* Navigation styles */
+    .nav-item-active {
+        @apply flex grow items-center gap-3 rounded-xl border-2 border-blue-300 
+               bg-blue-100 px-3 py-2 text-sm font-bold uppercase text-duo-blue-600;
+    }
+
+    .nav-item {
+        @apply flex grow items-center gap-3 rounded-xl px-3 py-2 
+               text-sm font-bold uppercase text-gray-400 
+               transition-colors duration-200 hover:bg-gray-100;
+    }
+
+    /* Card styles */
+    .card-duo {
+        @apply rounded-2xl border-2 border-gray-200 bg-white/90 backdrop-blur-sm p-6 
+               shadow-lg transition-all duration-200 hover:shadow-xl hover:bg-white/95;
+    }
+
+    .card-duo-gradient {
+        @apply rounded-2xl bg-gradient-to-br from-white/95 to-blue-50/95 backdrop-blur-sm p-6 
+               shadow-lg border border-blue-200/50 transition-all duration-200 hover:shadow-xl hover:scale-105;
+    }
+
+    .card-sign-language {
+        @apply rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 backdrop-blur-sm p-6 
+               border border-indigo-200/30 shadow-lg transition-all duration-300 hover:shadow-xl hover:border-indigo-300/50;
+    }
+
+    /* Progress bar */
+    .progress-duo {
+        @apply h-4 rounded-full bg-gray-200;
+    }
+
+    .progress-duo-fill {
+        @apply h-full rounded-full bg-duo-green-500 transition-all duration-500;
     }
 }
 
 @layer utilities {
     .text-shadow {
         text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .bg-gradient-duo-home {
+        background: linear-gradient(135deg, #235390 0%, #1e4976 100%);
     }
 }
 
@@ -35,30 +130,81 @@
     animation: progress 0.5s ease-out forwards;
 }
 
-/* Custom styles for VideoCard */
-.video-card {
-    transition: transform 0.2s ease;
+/* Sign Language Learning Animations */
+@keyframes bounce-subtle {
+    0%, 100% { 
+        transform: translateY(0);
+        animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% { 
+        transform: translateY(-5px);
+        animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
 }
 
-.video-card:hover {
-    transform: translateY(-2px);
+.animate-bounce-subtle {
+    animation: bounce-subtle 2s infinite;
 }
 
-/* Custom styles for buttons */
-.btn-primary {
-    @apply bg-duo-green text-white font-bold py-3 px-6 rounded-lg
-           shadow-md hover:shadow-lg transition-all duration-200
-           focus:outline-none focus:ring-2 focus:ring-duo-green focus:ring-opacity-50;
+@keyframes hand-wave {
+    0%, 100% { 
+        transform: rotate(-10deg);
+    }
+    50% { 
+        transform: rotate(10deg);
+    }
 }
 
-.btn-secondary {
-    @apply bg-duo-blue text-white font-bold py-3 px-6 rounded-lg
-           shadow-md hover:shadow-lg transition-all duration-200
-           focus:outline-none focus:ring-2 focus:ring-duo-blue focus:ring-opacity-50;
+.animate-hand-wave {
+    animation: hand-wave 1s ease-in-out infinite;
 }
 
-/* Custom styles for inputs */
-.input-primary {
-    @apply w-full px-4 py-2 rounded-lg border-2 border-gray-300
-           focus:border-duo-green focus:outline-none transition-colors duration-200;
+@keyframes sign-glow {
+    0%, 100% { 
+        box-shadow: 0 0 5px rgba(99, 102, 241, 0.3);
+    }
+    50% { 
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.6), 0 0 30px rgba(99, 102, 241, 0.4);
+    }
+}
+
+.animate-sign-glow {
+    animation: sign-glow 2s ease-in-out infinite;
+}
+
+@keyframes float-gentle {
+    0%, 100% { 
+        transform: translateY(0px) rotate(0deg);
+    }
+    33% { 
+        transform: translateY(-2px) rotate(1deg);
+    }
+    66% { 
+        transform: translateY(2px) rotate(-1deg);
+    }
+}
+
+.animate-float-gentle {
+    animation: float-gentle 3s ease-in-out infinite;
+}
+
+/* Lesson tile styles similar to Duolingo */
+.tile-lesson {
+    @apply relative rounded-full border-b-8 transition-all duration-200;
+}
+
+.tile-lesson:hover {
+    @apply brightness-110;
+}
+
+.tile-lesson-active {
+    @apply border-duo-green-600 bg-duo-green-500;
+}
+
+.tile-lesson-complete {
+    @apply border-duo-yellow-600 bg-duo-yellow-400;
+}
+
+.tile-lesson-locked {
+    @apply border-gray-400 bg-gray-300;
 }
