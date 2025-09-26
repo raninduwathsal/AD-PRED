@@ -30,6 +30,7 @@ services:
       dockerfile: Dockerfile
     container_name: slsl-server
     environment:
+      DB_URL: mysql://slsluser:slslpassword@db:3306/slsldb
       DB_HOST: db
       DB_PORT: 3306
       DB_USER: slsluser

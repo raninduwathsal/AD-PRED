@@ -6,18 +6,31 @@ import path from 'path';
 dotenv.config();
 
 async function initializeDatabase() {
-    const dbUrl = new URL(process.env.DB_URL || '');
-    const password = dbUrl.password || '';
-    const user = dbUrl.username || '';
-    const database = dbUrl.pathname.replace('/', '');
+    let host: string, user: string, password: string, database: string, port: number;
+    
+    if (process.env.DB_URL) {
+        const dbUrl = new URL(process.env.DB_URL);
+        host = dbUrl.hostname;
+        user = dbUrl.username || 'root';
+        password = dbUrl.password || '';
+        database = dbUrl.pathname.replace('/', '');
+        port = Number(dbUrl.port) || 3306;
+    } else {
+        // Fallback to individual environment variables
+        host = process.env.DB_HOST || 'localhost';
+        user = process.env.DB_USER || 'root';
+        password = process.env.DB_PASSWORD || '';
+        database = process.env.DB_NAME || 'testdb';
+        port = Number(process.env.DB_PORT) || 3306;
+    }
     
     try {
         // Create connection without database specified
         const initialPool = createPool({
-            host: dbUrl.hostname,
+            host: host,
             user: user,
             password: password,
-            port: Number(dbUrl.port) || 3306
+            port: port
         });
 
         // Create database if it doesn't exist
@@ -26,11 +39,11 @@ async function initializeDatabase() {
 
         // Create connection with database specified
         const pool = createPool({
-            host: dbUrl.hostname,
+            host: host,
             user: user,
             password: password,
             database: database,
-            port: Number(dbUrl.port) || 3306
+            port: port
         });
 
         // Read and execute schema SQL

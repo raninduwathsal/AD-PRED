@@ -8,18 +8,30 @@ class Database {
     private pool: Pool;
 
     private constructor() {
-    const DEFAULT_DB_URL = 'mysql://root:password@localhost:3306/testdb';
-    const dbUrl = new URL(process.env.DB_URL || DEFAULT_DB_URL);
-        const password = dbUrl.password || '';
-        const user = dbUrl.username || '';
-        const database = dbUrl.pathname.replace('/', '');
+        let host: string, user: string, password: string, database: string, port: number;
+        
+        if (process.env.DB_URL) {
+            const dbUrl = new URL(process.env.DB_URL);
+            host = dbUrl.hostname;
+            user = dbUrl.username || 'root';
+            password = dbUrl.password || '';
+            database = dbUrl.pathname.replace('/', '');
+            port = Number(dbUrl.port) || 3306;
+        } else {
+            // Fallback to individual environment variables
+            host = process.env.DB_HOST || 'localhost';
+            user = process.env.DB_USER || 'root';
+            password = process.env.DB_PASSWORD || '';
+            database = process.env.DB_NAME || 'testdb';
+            port = Number(process.env.DB_PORT) || 3306;
+        }
         
         this.pool = createPool({
-            host: dbUrl.hostname,
+            host: host,
             user: user,
             password: password,
             database: database,
-            port: Number(dbUrl.port) || 3306,
+            port: port,
             connectionLimit: 10,
             multipleStatements: false
         });
