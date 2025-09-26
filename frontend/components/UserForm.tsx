@@ -1,6 +1,4 @@
-import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { useUserStore } from '../store/userStore';
 
 interface UserFormProps {
     onSubmit: (username: string) => void;
@@ -9,44 +7,52 @@ interface UserFormProps {
 
 export const UserForm = ({ onSubmit, type }: UserFormProps) => {
     const [username, setUsername] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (username.trim()) {
-            onSubmit(username.trim());
+        if (username.trim() && !isLoading) {
+            setIsLoading(true);
+            try {
+                await onSubmit(username.trim());
+            } finally {
+                setIsLoading(false);
+            }
         }
     };
 
     return (
-        <motion.form
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg"
-            onSubmit={handleSubmit}
-        >
-            <h2 className="text-2xl font-bold mb-6 text-center">
-                {type === 'login' ? 'Welcome Back!' : 'Get Started'}
-            </h2>
-            <div className="mb-4">
+        <form onSubmit={handleSubmit} className="w-full space-y-4">
+            <div>
                 <input
                     type="text"
-                    placeholder="Choose a username"
+                    placeholder="Enter your username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg border-2 border-gray-300 focus:border-duo-green focus:outline-none"
+                    className="input-duo text-gray-900 placeholder-gray-500"
                     maxLength={100}
                     required
+                    disabled={isLoading}
                 />
             </div>
-            <motion.button
+            <button
                 type="submit"
-                className="w-full py-3 px-4 bg-duo-green text-white font-bold rounded-lg shadow-md
-                    hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-duo-green focus:ring-opacity-50"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                disabled={!username.trim() || isLoading}
+                className={`btn-duo-primary ${
+                    !username.trim() || isLoading
+                        ? 'opacity-70 cursor-not-allowed hover:bg-duo-green-500 hover:border-duo-green-600'
+                        : ''
+                }`}
             >
-                {type === 'login' ? 'Login' : 'Sign Up'}
-            </motion.button>
-        </motion.form>
+                {isLoading ? (
+                    <div className="flex items-center justify-center gap-2">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                        {type === 'login' ? 'Signing in...' : 'Creating account...'}
+                    </div>
+                ) : (
+                    type === 'login' ? 'Sign in' : 'Create account'
+                )}
+            </button>
+        </form>
     );
 };

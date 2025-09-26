@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { useUserStore } from '../store/userStore';
 import { refillHearts } from '../lib/api';
 
@@ -27,49 +26,87 @@ export const StatsBar = ({ hearts, streak, xp, level = Math.floor(xp / 100) + 1,
     };
 
     return (
-        <div className="flex items-center justify-between px-4 py-2 bg-white shadow-md">
-            <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1">
-                    <div className="flex gap-1">
-                        {[...Array(5)].map((_, i) => (
-                            <motion.span
-                                key={i}
-                                initial={false}
-                                animate={i < hearts ? { scale: [1.2, 1] } : { scale: 1, opacity: 0.3 }}
-                                className="text-2xl"
-                            >
-                                ❤️
-                            </motion.span>
-                        ))}
+        <div className="bg-duo-green-500 border-b-4 border-duo-green-600 px-4 py-3">
+            <div className="flex items-center justify-between max-w-6xl mx-auto">
+                {/* Left section - Hearts and Streak */}
+                <div className="flex items-center gap-6">
+                    {/* Hearts */}
+                    <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                            {[...Array(5)].map((_, i) => (
+                                <span
+                                    key={i}
+                                    className={`text-2xl transition-all duration-200 ${
+                                        i < hearts ? 'scale-100 opacity-100' : 'scale-75 opacity-30'
+                                    }`}
+                                >
+                                    ❤️
+                                </span>
+                            ))}
+                        </div>
+                        {/* Hearts count for mobile */}
+                        <span className="font-bold text-white text-lg sm:hidden">
+                            {hearts}
+                        </span>
+                        {/* Debug refill button */}
+                        <button
+                            onClick={handleRefillHearts}
+                            className="ml-2 px-2 py-1 text-xs bg-duo-green-600 hover:bg-duo-green-700 
+                                     text-white rounded transition-colors duration-200"
+                            title="Refill Hearts"
+                        >
+                            +
+                        </button>
                     </div>
-                    {/* Debug Refill Button */}
-                    <button
-                        onClick={handleRefillHearts}
-                        className="ml-2 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded"
-                        title="Debug: Refill Hearts"
-                    >
-                        🔄
-                    </button>
+
+                    {/* Streak */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-2xl">🔥</span>
+                        <span className="font-bold text-white text-lg">{streak}</span>
+                    </div>
                 </div>
+
+                {/* Center section - Level and XP (hidden on mobile) */}
+                <div className="hidden md:flex items-center gap-4">
+                    <div className="text-center">
+                        <div className="text-sm text-duo-green-100">Level</div>
+                        <div className="font-bold text-white text-xl">{level}</div>
+                    </div>
+                    
+                    {/* XP Progress bar */}
+                    <div className="flex flex-col items-center gap-1 min-w-[120px]">
+                        <div className="text-sm text-duo-green-100">{xp} XP</div>
+                        <div className="progress-duo bg-duo-green-600">
+                            <div 
+                                className="progress-duo-fill bg-duo-yellow-400 transition-all duration-1000"
+                                style={{ width: `${xpProgress}%` }}
+                            />
+                        </div>
+                        <div className="text-xs text-duo-green-100">
+                            {100 - xpProgress} to next level
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right section - Gems/XP */}
                 <div className="flex items-center gap-2">
-                    <span className="text-lg">🔥</span>
-                    <span className="font-bold">{streak}</span>
+                    <span className="text-2xl">💎</span>
+                    <span className="font-bold text-white text-lg">{xp}</span>
                 </div>
             </div>
-            <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                    <span className="text-lg">✨</span>
-                    <span className="font-bold">{xp}</span>
+
+            {/* Mobile XP progress */}
+            <div className="mt-3 md:hidden">
+                <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm text-duo-green-100">Level {level}</span>
+                    <span className="text-sm text-duo-green-100">{xp} XP</span>
                 </div>
-                <div className="relative w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <motion.div
-                        className="absolute inset-0 bg-duo-green"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${xpProgress}%` }}
-                        transition={{ duration: 0.5 }}
+                <div className="progress-duo bg-duo-green-600">
+                    <div 
+                        className="progress-duo-fill bg-duo-yellow-400 transition-all duration-1000"
+                        style={{ width: `${xpProgress}%` }}
                     />
                 </div>
-                <span className="text-sm font-semibold">Level {level}</span>
             </div>
         </div>
     );
