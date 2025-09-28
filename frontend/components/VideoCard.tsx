@@ -22,7 +22,20 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
     const [showResult, setShowResult] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [serverResult, setServerResult] = useState<{ was_correct: boolean; correct_answer: string } | null>(null);
+    const [videoError, setVideoError] = useState<string | null>(null);
+    const [retryCount, setRetryCount] = useState(0);
+    const [isRetrying, setIsRetrying] = useState(false);
+    const [forceRefresh, setForceRefresh] = useState(0);
+    const [loadingProgress, setLoadingProgress] = useState(0);
+    const [previousUrl, setPreviousUrl] = useState<string>('');
+    const [forceIframe, setForceIframe] = useState(false);
+    const [useDirectEmbed, setUseDirectEmbed] = useState(false);
+    const [containerKey, setContainerKey] = useState(() => `vimeo-${Date.now()}-${Math.random()}`);
     const vimeoPlayerRef = useRef<any>(null);
+    const initTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const currentVideoUrlRef = useRef<string>('');
+    const containerRef = useRef<HTMLDivElement>(null);
+    const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const getVimeoId = (url: string): string => {
         const match = url.match(/(?:vimeo\.com\/)(\d+)/);
@@ -32,6 +45,12 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
     // Cleanup effect to destroy Vimeo player on unmount
     useEffect(() => {
         return () => {
+            if (initTimeoutRef.current) {
+                clearTimeout(initTimeoutRef.current);
+            }
+            if (progressIntervalRef.current) {
+                clearTimeout(progressIntervalRef.current);
+            }
             if (vimeoPlayerRef.current) {
                 try {
                     vimeoPlayerRef.current.destroy();
@@ -43,71 +62,258 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
         };
     }, []);
 
+    // Progress simulation for better UX
+    const startProgressSimulation = () => {
+        setLoadingProgress(0);
+        let progress = 0;
+        
+        const simulateProgress = () => {
+            progress += Math.random() * 15 + 5; // Random increment between 5-20
+            if (progress > 90) progress = 90; // Cap at 90% until actual load
+            
+            setLoadingProgress(progress);
+            
+            if (progress < 90) {
+                progressIntervalRef.current = setTimeout(simulateProgress, 500 + Math.random() * 1000);
+            }
+        };
+        
+        simulateProgress();
+    };
+
+    // Enhanced retry function with multiple fallback strategies
+    const retryVideoLoad = () => {
+        if (retryCount < 5) { // Increased retry attempts
+            console.log(`🔄 Enhanced retry ${retryCount + 1} for:`, videoUrl);
+            
+            // Complete reset
+            setIsRetrying(true);
+            setVideoError(null);
+            setIsVideoReady(false);
+            setLoadingProgress(0);
+            
+            // Clear any existing intervals
+            if (progressIntervalRef.current) {
+                clearTimeout(progressIntervalRef.current);
+            }
+            
+            // Destroy player and clear DOM
+            if (vimeoPlayerRef.current) {
+                try {
+                    vimeoPlayerRef.current.destroy();
+                    vimeoPlayerRef.current = null;
+                } catch (error) {
+                    console.error('Error destroying player during retry:', error);
+                }
+            }
+            
+            // Force DOM cleanup
+            if (containerRef.current) {
+                containerRef.current.innerHTML = '';
+            }
+            
+            // Generate new container key to force complete DOM reset
+            const newKey = `vimeo-retry-${Date.now()}-${Math.random()}`;
+            setContainerKey(newKey);
+            console.log('🆕 Generated new container key for retry:', newKey);
+            
+            // Try different strategies on different attempts
+            if (retryCount === 2) {
+                console.log('🔧 Trying direct iframe embed approach...');
+                setUseDirectEmbed(true);
+            } else if (retryCount === 3) {
+                console.log('🔧 Trying force iframe approach...');
+                setForceIframe(true);
+            }
+            
+            setTimeout(() => {
+                setIsRetrying(false);
+                setRetryCount(prev => prev + 1);
+                setForceRefresh(prev => prev + 1); // Force re-render
+            }, 1500);
+        } else {
+            console.log('Max retries reached, allowing continue anyway');
+            setIsVideoReady(true);
+        }
+    };
+
+    // Complete reset and reinitialize when videoUrl changes
     useEffect(() => {
+        console.log('🎥 VideoCard: videoUrl changed to:', videoUrl);
+        console.log('🔄 Previous URL was:', previousUrl);
+        
+        setPreviousUrl(videoUrl);
+        
+        // Reset all states for new video
         setStartTime(Date.now());
         setSelectedAnswer(null);
         setShowResult(false);
         setIsSubmitting(false);
         setServerResult(null);
-        setIsVideoReady(false); // Reset video ready state
+        setIsVideoReady(false);
+        setVideoError(null);
+        setLoadingProgress(0);
+        setUseDirectEmbed(false);
+        setForceIframe(false);
+        
+        // Reset retry count only for different videos
+        if (previousUrl !== videoUrl) {
+            setRetryCount(0);
+            // Generate new container key to force complete DOM reset
+            const newKey = `vimeo-${Date.now()}-${Math.random()}`;
+            setContainerKey(newKey);
+            console.log('🆕 Generated new container key for video change:', newKey);
+        }
+        
+        // Clear any existing intervals/timeouts
+        if (initTimeoutRef.current) {
+            clearTimeout(initTimeoutRef.current);
+        }
+        if (progressIntervalRef.current) {
+            clearTimeout(progressIntervalRef.current);
+        }
+
+        // Always destroy existing player when URL changes
+        if (vimeoPlayerRef.current) {
+            try {
+                console.log('Destroying existing Vimeo player for new video');
+                vimeoPlayerRef.current.destroy();
+                vimeoPlayerRef.current = null;
+            } catch (error) {
+                console.error('Error destroying previous Vimeo player:', error);
+            }
+        }
         
         if (videoUrl.startsWith('https://example.com')) {
             setIsVideoReady(true);
             return;
         }
 
+        // Wait for both Vimeo script and DOM to be ready
         if (videoUrl.includes('vimeo.com') && isVimeoLoaded) {
             const vimeoId = getVimeoId(videoUrl);
-            console.log('Loading Vimeo video:', { vimeoId, url: videoUrl });
+            console.log('Initializing new Vimeo video:', { vimeoId, url: videoUrl });
 
-            // Destroy existing player if it exists
-            if (vimeoPlayerRef.current) {
-                try {
-                    vimeoPlayerRef.current.destroy();
-                    vimeoPlayerRef.current = null;
-                } catch (error) {
-                    console.error('Error destroying previous Vimeo player:', error);
-                }
-            }
-
-            // Add a small delay to ensure the DOM element is ready
             const initializePlayer = () => {
                 try {
-                    const player = new window.Vimeo.Player('vimeo-player', {
+                    const playerId = containerKey;
+                    const playerElement = document.getElementById(playerId);
+                    
+                    if (!playerElement) {
+                        console.error(`Player element ${playerId} not found, DOM may not be ready`);
+                        // Retry after DOM update
+                        setTimeout(() => {
+                            const retryElement = document.getElementById(playerId);
+                            if (!retryElement) {
+                                console.error(`Still no player element after retry: ${playerId}`);
+                                setVideoError('Video container not found');
+                                return;
+                            }
+                            initializePlayer();
+                        }, 200);
+                        return;
+                    }
+
+                    console.log('🚀 Creating enhanced Vimeo player:', { vimeoId, playerId, element: playerElement });
+                    
+                    // Start progress simulation
+                    startProgressSimulation();
+                    
+                    // Enhanced Vimeo player options for better performance
+                    const playerOptions = {
                         id: vimeoId,
                         responsive: true,
                         controls: false,
                         autoplay: true,
                         loop: true,
                         background: true,
-                        muted: true
-                    });
+                        muted: true,
+                        // Performance optimizations
+                        dnt: true, // Do not track - may help with GDPR
+                        quality: 'auto', // Let Vimeo decide quality
+                        speed: true, // Enable speed controls
+                        keyboard: false, // Disable keyboard shortcuts
+                        pip: false, // Disable picture-in-picture
+                        title: false, // Hide title
+                        byline: false, // Hide byline
+                        portrait: false, // Hide portrait
+                    };
 
+                    const player = new window.Vimeo.Player(playerId, playerOptions);
                     vimeoPlayerRef.current = player;
 
+                    // Extended timeout for slow connections
+                    const loadTimeout = setTimeout(() => {
+                        console.warn('⏰ Video load timeout for:', videoUrl);
+                        setVideoError('Video loading is taking longer than expected');
+                        // Don't mark as ready yet, let user retry
+                        if (retryCount < 3) {
+                            console.log('Auto-retrying due to timeout...');
+                            retryVideoLoad();
+                        } else {
+                            setIsVideoReady(true);
+                        }
+                    }, 20000); // Increased to 20 seconds
+
                     player.on('loaded', () => {
-                        console.log('Vimeo video loaded successfully');
+                        clearTimeout(loadTimeout);
+                        if (progressIntervalRef.current) {
+                            clearTimeout(progressIntervalRef.current);
+                        }
+                        setLoadingProgress(100);
+                        console.log('✅ Vimeo video loaded successfully:', videoUrl);
                         setIsVideoReady(true);
+                        setVideoError(null);
+                        setRetryCount(0); // Reset on success
                     });
 
                     player.on('error', (error: any) => {
-                        console.error('Vimeo player error:', error);
-                        setIsVideoReady(true);
+                        clearTimeout(loadTimeout);
+                        if (progressIntervalRef.current) {
+                            clearTimeout(progressIntervalRef.current);
+                        }
+                        console.error('❌ Vimeo player error:', error, 'for URL:', videoUrl);
+                        const errorMsg = error.message || error.name || 'Unknown video error';
+                        setVideoError(`Video error: ${errorMsg}`);
+                        
+                        // Auto-retry for certain errors
+                        if (retryCount < 2 && (errorMsg.includes('network') || errorMsg.includes('timeout'))) {
+                            console.log('🔄 Auto-retrying due to network error...');
+                            setTimeout(() => retryVideoLoad(), 2000);
+                        }
                     });
 
                     player.on('play', () => {
-                        console.log('Vimeo video started playing');
+                        console.log('▶️ Video started playing:', videoUrl);
+                        setVideoError(null);
+                        setLoadingProgress(100);
                     });
+
+                    player.on('bufferstart', () => {
+                        console.log('⏳ Video buffering started');
+                    });
+
+                    player.on('bufferend', () => {
+                        console.log('⚡ Video buffering ended');
+                    });
+
                 } catch (error) {
-                    console.error('Error initializing Vimeo player:', error);
-                    setIsVideoReady(true);
+                    console.error('💥 Failed to create Vimeo player:', error);
+                    setVideoError(`Player creation failed: ${(error as Error).message}`);
                 }
             };
 
-            // Use setTimeout to ensure DOM is ready
-            setTimeout(initializePlayer, 100);
+            // Give DOM time to update, then initialize
+            initTimeoutRef.current = setTimeout(initializePlayer, 300);
         }
-    }, [videoUrl, isVimeoLoaded]);
+    }, [videoUrl, isVimeoLoaded, forceRefresh]);
+
+    // Simplified retry effect
+    useEffect(() => {
+        if (retryCount > 0) {
+            console.log('🔄 Retry attempt:', retryCount, 'for URL:', videoUrl);
+        }
+    }, [retryCount]);
 
     const handleAnswer = async (answer: string) => {
         if (disabled || selectedAnswer || isSubmitting) {
@@ -182,9 +388,30 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
         <>
             <Script 
                 src="https://player.vimeo.com/api/player.js"
+                strategy="beforeInteractive"
                 onLoad={() => {
                     console.log('Vimeo player script loaded');
-                    setIsVimeoLoaded(true);
+                    // Add a small delay to ensure the script is fully available
+                    setTimeout(() => {
+                        if (typeof window !== 'undefined' && window.Vimeo) {
+                            setIsVimeoLoaded(true);
+                        } else {
+                            console.warn('Vimeo script loaded but Vimeo object not available');
+                            // Try to check again after a short delay
+                            setTimeout(() => {
+                                if (window.Vimeo) {
+                                    setIsVimeoLoaded(true);
+                                } else {
+                                    console.error('Vimeo script failed to initialize properly');
+                                    setVideoError('Video player script failed to load');
+                                }
+                            }, 1000);
+                        }
+                    }, 100);
+                }}
+                onError={(error) => {
+                    console.error('Failed to load Vimeo script:', error);
+                    setVideoError('Video player script failed to load');
                 }}
             />
             
@@ -203,6 +430,47 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
                 {/* Video container with enhanced Duolingo-style design */}
                 <div className="relative mb-8 rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-duo-blue-50 to-duo-green-50 border-4 border-white ring-4 ring-duo-blue-100">
                     <div className="relative aspect-video bg-gray-100 flex items-center justify-center">
+                        {/* Manual refresh button */}
+                        {!videoUrl.startsWith('https://example.com') && (
+                            <button
+                                onClick={() => {
+                                    console.log('🔄 Manual refresh button clicked for:', videoUrl);
+                                    
+                                    // Complete reset
+                                    setRetryCount(0);
+                                    setVideoError(null);
+                                    setIsVideoReady(false);
+                                    
+                                    if (vimeoPlayerRef.current) {
+                                        try {
+                                            vimeoPlayerRef.current.destroy();
+                                            vimeoPlayerRef.current = null;
+                                        } catch (error) {
+                                            console.error('Error destroying player during manual refresh:', error);
+                                        }
+                                    }
+                                    
+                                    // Force DOM cleanup
+                                    if (containerRef.current) {
+                                        containerRef.current.innerHTML = '';
+                                    }
+                                    
+                                    // Generate new container key for complete reset
+                                    const newKey = `vimeo-refresh-${Date.now()}-${Math.random()}`;
+                                    setContainerKey(newKey);
+                                    console.log('🔄 Manual refresh: new container key:', newKey);
+                                    
+                                    // Force complete re-render
+                                    setForceRefresh(prev => prev + 1);
+                                    currentVideoUrlRef.current = ''; // Force URL change detection
+                                }}
+                                className="absolute top-4 right-4 z-10 p-2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full shadow-lg transition-all hover:scale-110"
+                                title="Refresh video"
+                            >
+                                <span className="text-lg">🔄</span>
+                            </button>
+                        )}
+
                         {videoUrl.startsWith('https://example.com') ? (
                             <div className="text-center p-8">
                                 <div className="text-6xl mb-4">🤟</div>
@@ -210,12 +478,42 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
                                 <p className="text-sm text-gray-500">{videoUrl.split('/').pop()?.replace('.mp4', '')}</p>
                             </div>
                         ) : videoUrl.includes('vimeo.com') ? (
-                            <div className="relative w-full pt-[56.25%]">
-                                <div 
-                                    id="vimeo-player" 
-                                    key={videoUrl}
-                                    className="absolute top-0 left-0 w-full h-full"
-                                ></div>
+                            <div className="relative w-full pt-[56.25%]" key={`container-${videoUrl}-${forceRefresh}`}>
+                                {(useDirectEmbed || forceIframe) ? (
+                                    // Fallback: Direct iframe embed
+                                    <iframe
+                                        src={`https://player.vimeo.com/video/${getVimeoId(videoUrl)}?autoplay=1&loop=1&title=0&byline=0&portrait=0&muted=1&controls=0`}
+                                        className="absolute top-0 left-0 w-full h-full"
+                                        frameBorder="0"
+                                        allow="autoplay; fullscreen; picture-in-picture"
+                                        allowFullScreen
+                                        onLoad={() => {
+                                            console.log('🎯 Fallback iframe loaded successfully');
+                                            setIsVideoReady(true);
+                                            setVideoError(null);
+                                            setLoadingProgress(100);
+                                        }}
+                                        onError={() => {
+                                            console.error('❌ Fallback iframe failed to load');
+                                            setVideoError('Both player methods failed');
+                                        }}
+                                    />
+                                ) : (
+                                    // Primary: Vimeo Player API
+                                    <div 
+                                        ref={containerRef}
+                                        id={containerKey}
+                                        key={containerKey}
+                                        className="absolute top-0 left-0 w-full h-full bg-black"
+                                    ></div>
+                                )}
+                                
+                                {/* Debug overlay */}
+                                {process.env.NODE_ENV === 'development' && (
+                                    <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs p-1 rounded">
+                                        ID: {getVimeoId(videoUrl)} | Method: {useDirectEmbed || forceIframe ? 'iframe' : 'API'} | Retry: {retryCount}
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <video
@@ -225,16 +523,78 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
                                 controls
                                 className="w-full h-full object-cover"
                                 onLoadedData={() => setIsVideoReady(true)}
-                                onError={(e) => console.error('Video loading error:', e)}
+                                onError={(e) => {
+                                    console.error('Video loading error:', e);
+                                    setVideoError('Video file could not be loaded');
+                                }}
                             />
                         )}
                     </div>
                     
-                    {/* Video loading indicator */}
+                    {/* Enhanced video loading indicator with progress */}
                     {!isVideoReady && !videoUrl.startsWith('https://example.com') && (
-                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                            <div className="bg-white rounded-full p-4">
-                                <div className="h-8 w-8 animate-spin rounded-full border-4 border-duo-green-500 border-t-transparent"></div>
+                        <div className="absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center">
+                            <div className="bg-white rounded-3xl p-8 text-center max-w-md mx-4 shadow-2xl">
+                                {isRetrying ? (
+                                    <>
+                                        <div className="text-4xl mb-4">🔄</div>
+                                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-duo-blue-500 border-t-transparent mx-auto mb-4"></div>
+                                        <p className="text-gray-700 font-bold text-lg">Retrying Connection...</p>
+                                        <p className="text-sm text-gray-500 mt-2">Attempt {retryCount + 1} of 5</p>
+                                    </>
+                                ) : videoError ? (
+                                    <>
+                                        <div className="text-5xl mb-4">⚠️</div>
+                                        <p className="text-gray-800 font-bold text-lg mb-2">Video Loading Issue</p>
+                                        <div className="bg-red-50 rounded-lg p-3 mb-4">
+                                            <p className="text-sm text-red-700">{videoError}</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            {retryCount < 5 && (
+                                                <button
+                                                    onClick={retryVideoLoad}
+                                                    className="flex-1 px-4 py-3 bg-duo-blue-500 text-white rounded-xl hover:bg-duo-blue-600 transition-colors font-bold"
+                                                >
+                                                    🔄 Try Again ({5 - retryCount} left)
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => setIsVideoReady(true)}
+                                                className="flex-1 px-4 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors font-bold"
+                                            >
+                                                ⏭️ Continue
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="text-5xl mb-4">🎥</div>
+                                        <div className="h-12 w-12 animate-spin rounded-full border-4 border-duo-green-500 border-t-transparent mx-auto mb-4"></div>
+                                        <p className="text-gray-800 font-bold text-lg">Loading Video...</p>
+                                        <p className="text-sm text-gray-500 mt-2">This may take a moment</p>
+                                        
+                                        {/* Progress bar */}
+                                        <div className="mt-4">
+                                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                                <div 
+                                                    className="h-full bg-gradient-to-r from-duo-green-500 to-duo-blue-500 rounded-full transition-all duration-300"
+                                                    style={{ width: `${Math.min(loadingProgress, 90)}%` }}
+                                                />
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                {Math.round(loadingProgress)}% loaded
+                                            </p>
+                                        </div>
+
+                                        {/* Quick retry option */}
+                                        <button
+                                            onClick={retryVideoLoad}
+                                            className="mt-4 px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors"
+                                        >
+                                            Taking too long? Click to retry
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     )}

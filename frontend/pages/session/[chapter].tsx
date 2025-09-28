@@ -113,7 +113,9 @@ export default function Session() {
                     console.log('Session ended, redirecting to dashboard');
                     router.push('/dashboard');
                 } else {
-                    console.log('Moving to next card:', currentIndex + 1);
+                    const nextIndex = currentIndex + 1;
+                    console.log('Moving to next card:', nextIndex);
+                    console.log('Next card video URL:', cards[nextIndex]?.video_url);
                     setCurrentIndex(prev => prev + 1);
                     setFeedback({ isCorrect: null, xp: 0 });
                 }
@@ -161,6 +163,20 @@ export default function Session() {
                         >
                             <span className="text-2xl">✕</span>
                         </button>
+                        
+                        <div className="flex items-center gap-4">
+                            {/* Force refresh button for video issues */}
+                            <button
+                                onClick={() => {
+                                    console.log('Force refreshing session...');
+                                    window.location.reload();
+                                }}
+                                className="flex items-center gap-2 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                                title="Refresh if video won't load"
+                            >
+                                <span className="text-xl">🔄</span>
+                            </button>
+                        </div>
                         
                         <div className="flex items-center gap-6">
                             {/* Hearts */}
@@ -238,7 +254,7 @@ export default function Session() {
                         {cards[currentIndex] && (
                             <div className="bg-white rounded-3xl shadow-xl border-4 border-white overflow-hidden transform hover:scale-[1.02] transition-transform duration-300">
                                 <VideoCard
-                                    key={`${cards[currentIndex].card_id}-${currentIndex}`}
+                                    key={`card-${cards[currentIndex].card_id}-index-${currentIndex}-url-${cards[currentIndex].video_url}`}
                                     videoUrl={cards[currentIndex].video_url}
                                     options={cards[currentIndex].options}
                                     onAnswer={handleAnswer}
