@@ -16,12 +16,12 @@ router.post('/signup', async (req, res) => {
         }
 
         console.log('Attempting to create user:', username);
-        const result = await db.query<any[]>(
+        const result = await db.execute(
             'INSERT INTO users (username) VALUES (?)',
             [username]
         );
 
-        const userId = result[0].insertId;
+        const userId = result.insertId;
         res.json({ user_id: userId, username });
     } catch (error: any) {
         console.error('Signup error:', error);

@@ -1,4 +1,4 @@
-import { createPool, Pool, RowDataPacket } from 'mysql2/promise';
+import { createPool, Pool, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -47,6 +47,11 @@ class Database {
     public async query<T extends RowDataPacket[]>(sql: string, params?: any[]): Promise<T> {
         const [rows] = await this.pool.query<T>(sql, params);
         return rows;
+    }
+
+    public async execute(sql: string, params?: any[]): Promise<ResultSetHeader> {
+        const [result] = await this.pool.execute<ResultSetHeader>(sql, params);
+        return result;
     }
 }
 

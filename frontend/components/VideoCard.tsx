@@ -29,12 +29,27 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
         return match ? match[1] : '';
     };
 
+    // Cleanup effect to destroy Vimeo player on unmount
+    useEffect(() => {
+        return () => {
+            if (vimeoPlayerRef.current) {
+                try {
+                    vimeoPlayerRef.current.destroy();
+                    vimeoPlayerRef.current = null;
+                } catch (error) {
+                    console.error('Error destroying Vimeo player on cleanup:', error);
+                }
+            }
+        };
+    }, []);
+
     useEffect(() => {
         setStartTime(Date.now());
         setSelectedAnswer(null);
         setShowResult(false);
         setIsSubmitting(false);
         setServerResult(null);
+        setIsVideoReady(false); // Reset video ready state
         
         if (videoUrl.startsWith('https://example.com')) {
             setIsVideoReady(true);
@@ -45,36 +60,52 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
             const vimeoId = getVimeoId(videoUrl);
             console.log('Loading Vimeo video:', { vimeoId, url: videoUrl });
 
+            // Destroy existing player if it exists
             if (vimeoPlayerRef.current) {
-                vimeoPlayerRef.current.destroy();
+                try {
+                    vimeoPlayerRef.current.destroy();
+                    vimeoPlayerRef.current = null;
+                } catch (error) {
+                    console.error('Error destroying previous Vimeo player:', error);
+                }
             }
 
-            try {
-                const player = new window.Vimeo.Player('vimeo-player', {
-                    id: vimeoId,
-                    responsive: true,
-                    controls: false,
-                    autoplay: true,
-                    loop: true,
-                    background: true,
-                    muted: true
-                });
+            // Add a small delay to ensure the DOM element is ready
+            const initializePlayer = () => {
+                try {
+                    const player = new window.Vimeo.Player('vimeo-player', {
+                        id: vimeoId,
+                        responsive: true,
+                        controls: false,
+                        autoplay: true,
+                        loop: true,
+                        background: true,
+                        muted: true
+                    });
 
-                vimeoPlayerRef.current = player;
+                    vimeoPlayerRef.current = player;
 
-                player.on('loaded', () => {
-                    console.log('Vimeo video loaded successfully');
+                    player.on('loaded', () => {
+                        console.log('Vimeo video loaded successfully');
+                        setIsVideoReady(true);
+                    });
+
+                    player.on('error', (error: any) => {
+                        console.error('Vimeo player error:', error);
+                        setIsVideoReady(true);
+                    });
+
+                    player.on('play', () => {
+                        console.log('Vimeo video started playing');
+                    });
+                } catch (error) {
+                    console.error('Error initializing Vimeo player:', error);
                     setIsVideoReady(true);
-                });
+                }
+            };
 
-                player.on('error', (error: any) => {
-                    console.error('Vimeo player error:', error);
-                    setIsVideoReady(true);
-                });
-            } catch (error) {
-                console.error('Error initializing Vimeo player:', error);
-                setIsVideoReady(true);
-            }
+            // Use setTimeout to ensure DOM is ready
+            setTimeout(initializePlayer, 100);
         }
     }, [videoUrl, isVimeoLoaded]);
 
@@ -114,37 +145,37 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
     };
 
     const getButtonStyle = (option: string) => {
+        const baseStyle = "w-full rounded-2xl border-2 border-b-4 p-4 font-medium transition-all duration-300 transform";
+        
         if (!selectedAnswer) {
-            return `w-full rounded-2xl border-2 border-b-4 border-gray-300 bg-white p-4 
-                   text-gray-700 font-bold transition-all duration-200 
-                   hover:bg-gray-50 hover:border-gray-400 focus:outline-none 
-                   focus:ring-2 focus:ring-duo-blue-400 focus:ring-opacity-50
-                   ${disabled || isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`;
+            return `${baseStyle} border-gray-300 bg-white text-gray-700 shadow-md
+                   hover:bg-gray-50 hover:border-gray-400 hover:shadow-lg hover:scale-[1.02] 
+                   focus:outline-none focus:ring-4 focus:ring-duo-blue-200
+                   ${disabled || isSubmitting ? 'opacity-50 cursor-not-allowed hover:transform-none' : 'cursor-pointer'}`;
         }
         
         if (option === selectedAnswer) {
             if (isSubmitting || !serverResult) {
                 // Show loading state while waiting for server response
-                return `w-full rounded-2xl border-2 border-b-4 border-yellow-400 bg-yellow-300 p-4 
-                       text-yellow-800 font-bold transition-all duration-200`;
+                return `${baseStyle} border-yellow-400 bg-yellow-300 text-yellow-800 shadow-lg
+                       animate-pulse`;
             }
             
             // Use server result to determine correct styling
             const isCorrect = serverResult.was_correct;
-            return `w-full rounded-2xl border-2 border-b-4 p-4 font-bold transition-all duration-200
+            return `${baseStyle} shadow-xl scale-[1.02]
                    ${isCorrect 
-                     ? 'border-duo-green-600 bg-duo-green-500 text-white' 
-                     : 'border-duo-red-600 bg-duo-red-500 text-white'}`;
+                     ? 'border-duo-green-600 bg-duo-green-500 text-white ring-4 ring-duo-green-200' 
+                     : 'border-duo-red-600 bg-duo-red-500 text-white ring-4 ring-duo-red-200'}`;
         }
         
         // Show correct answer if user was wrong
         if (showResult && serverResult && !serverResult.was_correct && option === serverResult.correct_answer) {
-            return `w-full rounded-2xl border-2 border-b-4 border-duo-green-600 bg-duo-green-500 p-4 
-                   text-white font-bold opacity-75`;
+            return `${baseStyle} border-duo-green-600 bg-duo-green-500 text-white shadow-xl
+                   opacity-90 ring-4 ring-duo-green-200 animate-pulse`;
         }
         
-        return `w-full rounded-2xl border-2 border-b-4 border-gray-300 bg-gray-200 p-4 
-               text-gray-500 font-bold opacity-50`;
+        return `${baseStyle} border-gray-300 bg-gray-100 text-gray-400 opacity-60 cursor-not-allowed`;
     };
 
     return (
@@ -157,17 +188,20 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
                 }}
             />
             
-            <div className="w-full max-w-2xl mx-auto">
-                {/* Question header */}
-                <div className="mb-6 text-center">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                        What does this sign mean?
-                    </h2>
-                    <p className="text-gray-600">Watch the video and choose the correct answer</p>
+            <div className="w-full max-w-2xl mx-auto p-6">
+                {/* Question header with better styling */}
+                <div className="mb-8 text-center">
+                    <div className="inline-flex items-center gap-3 bg-gradient-to-r from-duo-blue-50 to-duo-green-50 rounded-2xl px-6 py-4 border-2 border-duo-blue-200 shadow-sm mb-4">
+                        <span className="text-2xl">👀</span>
+                        <h2 className="text-xl font-bold text-gray-800">
+                            What does this sign mean?
+                        </h2>
+                    </div>
+                    <p className="text-gray-600 text-lg">Watch carefully and choose your answer</p>
                 </div>
 
-                {/* Video container with Duolingo-style design */}
-                <div className="relative mb-8 rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-duo-blue-50 to-duo-green-50 border-4 border-white">
+                {/* Video container with enhanced Duolingo-style design */}
+                <div className="relative mb-8 rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-duo-blue-50 to-duo-green-50 border-4 border-white ring-4 ring-duo-blue-100">
                     <div className="relative aspect-video bg-gray-100 flex items-center justify-center">
                         {videoUrl.startsWith('https://example.com') ? (
                             <div className="text-center p-8">
@@ -177,7 +211,11 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
                             </div>
                         ) : videoUrl.includes('vimeo.com') ? (
                             <div className="relative w-full pt-[56.25%]">
-                                <div id="vimeo-player" className="absolute top-0 left-0 w-full h-full"></div>
+                                <div 
+                                    id="vimeo-player" 
+                                    key={videoUrl}
+                                    className="absolute top-0 left-0 w-full h-full"
+                                ></div>
                             </div>
                         ) : (
                             <video
@@ -202,8 +240,8 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
                     )}
                 </div>
 
-                {/* Answer options */}
-                <div className="space-y-3">
+                {/* Answer options with improved design */}
+                <div className="space-y-4">
                     {options.map((option, index) => (
                         <button
                             key={index}
@@ -212,14 +250,19 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
                             className={getButtonStyle(option)}
                         >
                             <div className="flex items-center justify-between">
-                                <span className="text-lg">{option}</span>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex-shrink-0 w-8 h-8 rounded-full border-2 border-current flex items-center justify-center font-bold text-sm">
+                                        {String.fromCharCode(65 + index)}
+                                    </div>
+                                    <span className="text-lg font-medium">{option}</span>
+                                </div>
                                 {selectedAnswer === option && (
-                                    <span className="text-2xl">
+                                    <span className="text-2xl animate-pulse">
                                         {isSubmitting ? '⏳' : showResult && serverResult ? (serverResult.was_correct ? '✅' : '❌') : ''}
                                     </span>
                                 )}
                                 {showResult && serverResult && !serverResult.was_correct && option === serverResult.correct_answer && (
-                                    <span className="text-2xl">✅</span>
+                                    <span className="text-2xl animate-bounce">✅</span>
                                 )}
                             </div>
                         </button>

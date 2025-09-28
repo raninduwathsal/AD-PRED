@@ -188,6 +188,99 @@
     animation: float-gentle 3s ease-in-out infinite;
 }
 
+/* New animations for enhanced session UI */
+@keyframes bounce-gentle {
+    0%, 100% { 
+        transform: translateY(0) scale(1);
+    }
+    50% { 
+        transform: translateY(-5px) scale(1.02);
+    }
+}
+
+.animate-bounce-gentle {
+    animation: bounce-gentle 0.6s ease-in-out;
+}
+
+@keyframes loading-bar {
+    0% { 
+        width: 0%;
+        transform: translateX(-100%);
+    }
+    50% { 
+        width: 100%;
+        transform: translateX(-100%);
+    }
+    100% { 
+        width: 100%;
+        transform: translateX(0%);
+    }
+}
+
+.animate-loading-bar {
+    animation: loading-bar 1.5s ease-in-out infinite;
+}
+
+@keyframes confetti {
+    0% { 
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+    }
+    100% { 
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+.animate-confetti {
+    animation: confetti linear forwards;
+}
+
+@keyframes float-sparkle {
+    0%, 100% { 
+        transform: translateY(0px) scale(0.8);
+        opacity: 0.4;
+    }
+    50% { 
+        transform: translateY(-10px) scale(1.2);
+        opacity: 1;
+    }
+}
+
+.animate-float-sparkle {
+    animation: float-sparkle 2s ease-in-out infinite;
+}
+
+@keyframes pulse-ring {
+    0% {
+        transform: scale(0.8);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(2.5);
+        opacity: 0;
+    }
+}
+
+.animate-pulse-ring {
+    animation: pulse-ring 1.5s ease-out infinite;
+}
+
+@keyframes slide-up-fade {
+    0% {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.animate-slide-up-fade {
+    animation: slide-up-fade 0.5s ease-out forwards;
+}
+
 /* Lesson tile styles similar to Duolingo */
 .tile-lesson {
     @apply relative rounded-full border-b-8 transition-all duration-200;
@@ -207,4 +300,27 @@
 
 .tile-lesson-locked {
     @apply border-gray-400 bg-gray-300;
+}
+
+/* Enhanced video container styles */
+.video-container-duo {
+    @apply relative overflow-hidden rounded-3xl shadow-2xl;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.video-container-duo::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    animation: shimmer 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
 }

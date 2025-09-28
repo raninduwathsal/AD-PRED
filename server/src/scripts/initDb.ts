@@ -46,17 +46,49 @@ async function initializeDatabase() {
             port: port
         });
 
+        // Check if tables already exist
+        const [rows] = await pool.query("SHOW TABLES");
+        if (Array.isArray(rows) && rows.length > 0) {
+            console.log('Tables already exist, skipping initialization');
+            await pool.end();
+            await initialPool.end();
+            return;
+        }
+
         // Read and execute schema SQL
-        const schemaPath = path.join(__dirname, '../db/schema.sql');
-        const schema = fs.readFileSync(schemaPath, 'utf8');
-        await pool.query(schema);
-        console.log('Schema created successfully');
+        // Try multiple possible paths for the schema file
+        let schemaPath = path.join(__dirname, '../db/schema.sql');
+        if (!fs.existsSync(schemaPath)) {
+            schemaPath = path.join(process.cwd(), 'db/schema.sql');
+        }
+        if (!fs.existsSync(schemaPath)) {
+            schemaPath = path.join(__dirname, '../../db/schema.sql');
+        }
+        
+        if (!fs.existsSync(schemaPath)) {
+            console.log('Schema file not found, skipping schema creation');
+        } else {
+            const schema = fs.readFileSync(schemaPath, 'utf8');
+            await pool.query(schema);
+            console.log('Schema created successfully');
+        }
 
         // Read and execute seed SQL
-        const seedPath = path.join(__dirname, '../db/seed.sql');
-        const seed = fs.readFileSync(seedPath, 'utf8');
-        await pool.query(seed);
-        console.log('Seed data inserted successfully');
+        let seedPath = path.join(__dirname, '../db/seed.sql');
+        if (!fs.existsSync(seedPath)) {
+            seedPath = path.join(process.cwd(), 'db/seed.sql');
+        }
+        if (!fs.existsSync(seedPath)) {
+            seedPath = path.join(__dirname, '../../db/seed.sql');
+        }
+        
+        if (!fs.existsSync(seedPath)) {
+            console.log('Seed file not found, skipping seed data');
+        } else {
+            const seed = fs.readFileSync(seedPath, 'utf8');
+            await pool.query(seed);
+            console.log('Seed data inserted successfully');
+        }
 
         await pool.end();
         await initialPool.end();
