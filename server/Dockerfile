@@ -26,7 +26,7 @@ RUN npm run build
 RUN chmod +x start.sh
 
 # Expose port
-EXPOSE 8000
+EXPOSE 3001
 
 # Use wait-for-it to wait for database and start the application
 CMD ["./start.sh"]
