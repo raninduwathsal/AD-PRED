@@ -29,7 +29,7 @@ export default function Demo() {
     const [showResult, setShowResult] = useState(false);
     const [lastAnswerCorrect, setLastAnswerCorrect] = useState<boolean | null>(null);
 
-    const handleAnswer = (answer: string, responseTime: number) => {
+    const handleAnswer = async (answer: string, responseTime: number) => {
         const isCorrect = answer === demoQuestions[currentQuestion].correct;
         setLastAnswerCorrect(isCorrect);
         setShowResult(true);
@@ -50,6 +50,12 @@ export default function Demo() {
                 setIsComplete(true);
             }
         }, 2000);
+
+        // Return result for VideoCard compatibility
+        return {
+            was_correct: isCorrect,
+            correct_answer: demoQuestions[currentQuestion].correct
+        };
     };
 
     const resetDemo = () => {

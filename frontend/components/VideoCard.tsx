@@ -10,7 +10,7 @@ declare global {
 interface VideoCardProps {
     videoUrl: string;
     options: string[];
-    onAnswer: (answer: string, responseTime: number) => void;
+    onAnswer: (answer: string, responseTime: number) => Promise<{ was_correct: boolean; correct_answer: string }>;
     disabled?: boolean;
 }
 
@@ -20,6 +20,8 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
     const [isVimeoLoaded, setIsVimeoLoaded] = useState(false);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [showResult, setShowResult] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [serverResult, setServerResult] = useState<{ was_correct: boolean; correct_answer: string } | null>(null);
     const vimeoPlayerRef = useRef<any>(null);
 
     const getVimeoId = (url: string): string => {
@@ -31,6 +33,8 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
         setStartTime(Date.now());
         setSelectedAnswer(null);
         setShowResult(false);
+        setIsSubmitting(false);
+        setServerResult(null);
         
         if (videoUrl.startsWith('https://example.com')) {
             setIsVideoReady(true);
@@ -74,9 +78,9 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
         }
     }, [videoUrl, isVimeoLoaded]);
 
-    const handleAnswer = (answer: string) => {
-        if (disabled || selectedAnswer) {
-            console.log('Answer blocked:', { disabled, selectedAnswer });
+    const handleAnswer = async (answer: string) => {
+        if (disabled || selectedAnswer || isSubmitting) {
+            console.log('Answer blocked:', { disabled, selectedAnswer, isSubmitting });
             return;
         }
         
@@ -94,13 +98,19 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
 
         const responseTime = (Date.now() - (startTime || Date.now())) / 1000;
         setSelectedAnswer(answer);
-        setShowResult(true);
+        setIsSubmitting(true);
         
-        // Delay the callback to show the visual feedback
-        setTimeout(() => {
+        try {
             console.log('Submitting answer:', { answer, responseTime, videoUrl });
-            onAnswer(answer, responseTime);
-        }, 1000);
+            const result = await onAnswer(answer, responseTime);
+            setServerResult(result);
+            setShowResult(true);
+        } catch (error) {
+            console.error('Error submitting answer:', error);
+            // Reset on error
+            setSelectedAnswer(null);
+            setIsSubmitting(false);
+        }
     };
 
     const getButtonStyle = (option: string) => {
@@ -109,16 +119,28 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
                    text-gray-700 font-bold transition-all duration-200 
                    hover:bg-gray-50 hover:border-gray-400 focus:outline-none 
                    focus:ring-2 focus:ring-duo-blue-400 focus:ring-opacity-50
-                   ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`;
+                   ${disabled || isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`;
         }
         
         if (option === selectedAnswer) {
-            // For demo purposes, assume first option is correct
-            const isCorrect = options.indexOf(option) === 0;
+            if (isSubmitting || !serverResult) {
+                // Show loading state while waiting for server response
+                return `w-full rounded-2xl border-2 border-b-4 border-yellow-400 bg-yellow-300 p-4 
+                       text-yellow-800 font-bold transition-all duration-200`;
+            }
+            
+            // Use server result to determine correct styling
+            const isCorrect = serverResult.was_correct;
             return `w-full rounded-2xl border-2 border-b-4 p-4 font-bold transition-all duration-200
                    ${isCorrect 
                      ? 'border-duo-green-600 bg-duo-green-500 text-white' 
                      : 'border-duo-red-600 bg-duo-red-500 text-white'}`;
+        }
+        
+        // Show correct answer if user was wrong
+        if (showResult && serverResult && !serverResult.was_correct && option === serverResult.correct_answer) {
+            return `w-full rounded-2xl border-2 border-b-4 border-duo-green-600 bg-duo-green-500 p-4 
+                   text-white font-bold opacity-75`;
         }
         
         return `w-full rounded-2xl border-2 border-b-4 border-gray-300 bg-gray-200 p-4 
@@ -186,15 +208,18 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
                         <button
                             key={index}
                             onClick={() => handleAnswer(option)}
-                            disabled={disabled || selectedAnswer !== null || (!isVideoReady && !videoUrl.startsWith('https://example.com'))}
+                            disabled={disabled || selectedAnswer !== null || isSubmitting || (!isVideoReady && !videoUrl.startsWith('https://example.com'))}
                             className={getButtonStyle(option)}
                         >
                             <div className="flex items-center justify-between">
                                 <span className="text-lg">{option}</span>
                                 {selectedAnswer === option && (
                                     <span className="text-2xl">
-                                        {options.indexOf(option) === 0 ? '✅' : '❌'}
+                                        {isSubmitting ? '⏳' : showResult && serverResult ? (serverResult.was_correct ? '✅' : '❌') : ''}
                                     </span>
+                                )}
+                                {showResult && serverResult && !serverResult.was_correct && option === serverResult.correct_answer && (
+                                    <span className="text-2xl">✅</span>
                                 )}
                             </div>
                         </button>
@@ -202,18 +227,18 @@ export const VideoCard = ({ videoUrl, options, onAnswer, disabled }: VideoCardPr
                 </div>
 
                 {/* Result feedback */}
-                {showResult && selectedAnswer && (
+                {showResult && selectedAnswer && serverResult && (
                     <div className="mt-6 text-center">
                         <div className={`inline-flex items-center gap-2 rounded-2xl px-6 py-3 font-bold text-white
-                            ${options.indexOf(selectedAnswer) === 0 
+                            ${serverResult.was_correct 
                               ? 'bg-duo-green-500' 
                               : 'bg-duo-red-500'}`}
                         >
                             <span className="text-2xl">
-                                {options.indexOf(selectedAnswer) === 0 ? '🎉' : '💔'}
+                                {serverResult.was_correct ? '🎉' : '💔'}
                             </span>
                             <span>
-                                {options.indexOf(selectedAnswer) === 0 ? 'Correct!' : 'Not quite right'}
+                                {serverResult.was_correct ? 'Correct!' : `The answer was "${serverResult.correct_answer}"`}
                             </span>
                         </div>
                     </div>
