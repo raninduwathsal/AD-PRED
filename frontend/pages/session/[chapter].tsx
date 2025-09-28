@@ -47,7 +47,7 @@ export default function Session() {
     const handleAnswer = async (answer: string, responseTime: number) => {
         if (!user || currentIndex >= cards.length) {
             console.error('Cannot submit answer:', { user, currentIndex, cardsLength: cards.length });
-            return;
+            throw new Error('Invalid state');
         }
 
         try {
@@ -109,6 +109,11 @@ export default function Session() {
                     setFeedback({ isCorrect: null, xp: 0 });
                 }
             }, 1500);
+
+            return {
+                was_correct: result.was_correct,
+                correct_answer: result.correct_answer
+            };
         } catch (error: any) {
             console.error('Error submitting answer:', {
                 error: error.message,
@@ -116,6 +121,7 @@ export default function Session() {
                 status: error.response?.status
             });
             setFeedback({ isCorrect: false, xp: 0 });
+            throw error;
         }
     };
 
