@@ -1,0 +1,4 @@
+{
+  "name": "Ad-Pred Learn",
+  "description": "An AI-powered application that analyzes content (like video URLs) to generate Duolingo-style quiz questions, groups them into chapters, and produces SQL insert statements for a database."
+}
